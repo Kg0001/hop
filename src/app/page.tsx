@@ -35,9 +35,11 @@ function HopOnPage() {
     load();
   }, []);
 
-  const upcomingRides = useMemo(() => {
+  const filteredRides = useMemo(() => {
     if (!rides || rides.length === 0) return [];
+
     const now = Date.now();
+
     return rides
       .filter((ride) => new Date(ride.datetime).getTime() > now)
       .filter((ride) => {
@@ -45,11 +47,14 @@ function HopOnPage() {
         if (destinationFilter === 'MH' || destinationFilter === 'LH') {
           return ride.toType === destinationFilter;
         }
-        return ride.toValue === destinationFilter;
+
+        const destination = ride.toValue || '';
+        return destination.includes(destinationFilter || '');
       })
-      .filter((ride) =>
-        genderFilter === 'All' ? true : ride.genderPref === genderFilter
-      )
+      .filter((ride) => {
+        if (genderFilter === 'All') return true;
+        return ride.genderPref === genderFilter;
+      })
       .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
   }, [rides, destinationFilter, genderFilter]);
 
@@ -66,20 +71,20 @@ function HopOnPage() {
   const handleCreateRide = async (payload: Omit<RideInput, 'createdByEmail'>) => {
     if (!currentUserEmail) return;
     const ride = await createRide({ ...payload, createdByEmail: currentUserEmail });
-    setRides((prev) => [ride, ...prev]);
+    setRides((prev) => [ride, ...(prev ?? [])]);
     setStatus('Ride posted!');
   };
 
   const handleJoinRide = async (id: string) => {
     if (!currentUserEmail) return;
     const updated = await joinRide(id, currentUserEmail);
-    setRides((prev) => prev.map((ride) => (ride.id === id ? updated : ride)));
+    setRides((prev) => (prev ?? []).map((ride) => (ride.id === id ? updated : ride)));
   };
 
   const handleDeleteRide = async (id: string) => {
     if (!currentUserEmail) return;
     await deleteRide(id, currentUserEmail);
-    setRides((prev) => prev.filter((ride) => ride.id !== id));
+    setRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
   };
 
   if (!isLoggedIn) {
@@ -164,17 +169,21 @@ function HopOnPage() {
           /* Browse Rides Content */
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-4 min-w-max">
-              {loading || !rides ? (
+              {loading ? (
                 <div className="w-80 flex-shrink-0 text-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="text-gray-600 mt-4">Loading rides...</p>
                 </div>
-              ) : upcomingRides.length === 0 ? (
+              ) : !rides || rides.length === 0 ? (
                 <div className="w-full flex-shrink-0">
-                  <div className="card p-6 text-center text-sm text-gray-600">No rides posted yet</div>
+                  <div className="card p-6 text-center text-sm text-gray-600">No rides available</div>
+                </div>
+              ) : filteredRides.length === 0 ? (
+                <div className="w-full flex-shrink-0">
+                  <div className="card p-6 text-center text-sm text-gray-600">No rides match your filters</div>
                 </div>
               ) : (
-                upcomingRides.map((ride) => (
+                filteredRides.map((ride) => (
                   <RideCard
                     key={ride.id}
                     ride={ride}
