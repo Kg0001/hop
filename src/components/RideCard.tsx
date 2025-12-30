@@ -28,7 +28,7 @@ export function RideCard({
 }) {
   const [copied, setCopied] = useState(false);
   const isCreator = currentUserEmail === ride.createdByEmail;
-  const isPassenger = ride.passengerEmails.includes(currentUserEmail ?? '');
+  const isPassenger = (ride.passengerEmails ?? []).includes(currentUserEmail ?? '');
   const isFull = ride.seatsFilled >= ride.seatsTotal;
 
   const handleCopy = async () => {

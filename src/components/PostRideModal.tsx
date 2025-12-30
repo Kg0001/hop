@@ -35,11 +35,17 @@ export function PostRideModal({ isOpen, onClose, onSubmit, disabled = false }: P
   }), []);
 
   useEffect(() => {
-    setFromValue((prev) => (optionsByType[fromType].includes(prev) ? prev : optionsByType[fromType][0] ?? ''));
+    setFromValue((prev) => {
+      const options = optionsByType[fromType] ?? [];
+      return options.includes(prev) ? prev : options[0] ?? '';
+    });
   }, [fromType, optionsByType]);
 
   useEffect(() => {
-    setToValue((prev) => (optionsByType[toType].includes(prev) ? prev : optionsByType[toType][0] ?? ''));
+    setToValue((prev) => {
+      const options = optionsByType[toType] ?? [];
+      return options.includes(prev) ? prev : options[0] ?? '';
+    });
   }, [toType, optionsByType]);
 
   const handleSubmit = async (e: FormEvent) => {

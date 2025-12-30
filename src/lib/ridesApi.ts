@@ -98,7 +98,7 @@ export async function joinRide(rideId: string, email: string): Promise<Ride> {
   }
 
   // Check if user already joined
-  if (ride.passengerEmails.includes(email)) {
+  if ((ride.passengerEmails ?? []).includes(email)) {
     return ride;
   }
 
@@ -112,7 +112,7 @@ export async function joinRide(rideId: string, email: string): Promise<Ride> {
     .from('rides')
     .update({
       seatsFilled: ride.seatsFilled + 1,
-      passengerEmails: [...ride.passengerEmails, email],
+      passengerEmails: [...(ride.passengerEmails ?? []), email],
     })
     .eq('id', rideId)
     .select()

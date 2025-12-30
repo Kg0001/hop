@@ -64,7 +64,10 @@ function HopOnPage() {
   );
 
   const joinedRides = useMemo(
-    () => (rides ? rides.filter((ride) => ride.passengerEmails.includes(currentUserEmail ?? '')) : []),
+    () =>
+      rides
+        ? rides.filter((ride) => (ride.passengerEmails ?? []).includes(currentUserEmail ?? ''))
+        : [],
     [rides, currentUserEmail]
   );
 
