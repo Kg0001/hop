@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import { RideInput } from '@/types';
 import { CITY_LOCATIONS, LH_BLOCKS, MH_BLOCKS } from '@/lib/ridesApi';
 
@@ -64,37 +63,22 @@ export function PostRideModal({ isOpen, onClose, onSubmit, disabled = false }: P
       setMessage(errors.join(' · '));
       return;
     }
-    // Supabase payload for rides table (legacy-safe)
-    const payload = {
-      from: fromValue,
-      to: toValue,
-      travel_date: date,
-      travel_time: time,
-      preferred_gender: genderPref,
-      cab_price: Number(totalPrice),
-      seats: Number(seatsTotal),
-      contact: phone,
-      hostel_block: fromType === 'MH' ? fromValue : null,
+    const payload: Omit<RideInput, 'createdByEmail'> = {
+      fromType,
+      fromValue,
+      toType,
+      toValue,
+      datetime: `${date}T${time}`,
+      totalPrice: Number(totalPrice),
+      seatsTotal: Number(seatsTotal),
+      genderPref,
+      phone,
+      created_by: null,
     };
 
-    console.log('PostRideModal submit payload:', payload);
     setPosting(true);
     try {
-      const { data, error } = await supabase
-        .from('rides')
-        .insert([payload]);
-
-      if (error) {
-        console.error('Supabase insert error:', {
-          message: error.message,
-          details: (error as { details?: string }).details,
-          hint: (error as { hint?: string }).hint,
-          code: error.code,
-        });
-        setMessage(error.message || 'Could not post ride. Try again.');
-        return;
-      }
-
+      await onSubmit(payload);
       setMessage('Ride posted successfully!');
       onClose();
       // Reset form

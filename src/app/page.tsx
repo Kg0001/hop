@@ -14,6 +14,7 @@ import { Ride, RideInput } from '@/types';
 
 function HopOnPage() {
   const { isLoggedIn, currentUserEmail } = useAuth();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [rides, setRides] = useState<Ride[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [destinationFilter, setDestinationFilter] = useState<DestinationFilter>('All');
@@ -24,6 +25,12 @@ function HopOnPage() {
   useEffect(() => {
     const load = async () => {
       try {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError) {
+          console.error('Auth error:', authError);
+        }
+        setCurrentUserId(authData?.user?.id ?? null);
+
         const { data, error } = await supabase
           .from('rides')
           .select('*')
@@ -47,6 +54,17 @@ function HopOnPage() {
     load();
   }, []);
 
+  const toTime = (ride: Ride) => {
+    const dateString = ride.datetime
+      ? ride.datetime
+      : ride.travel_date && ride.travel_time
+      ? `${ride.travel_date}T${ride.travel_time}`
+      : null;
+
+    const time = dateString ? new Date(dateString).getTime() : Number.POSITIVE_INFINITY;
+    return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+  };
+
   const filteredRides = useMemo(() => {
     if (!rides || rides.length === 0) return [];
 
@@ -54,15 +72,8 @@ function HopOnPage() {
 
     return rides
       .filter((ride) => {
-        const dateString = ride.datetime
-          ? ride.datetime
-          : ride.travel_date && ride.travel_time
-          ? `${ride.travel_date}T${ride.travel_time}`
-          : null;
-
-        if (!dateString) return false;
-        const time = new Date(dateString).getTime();
-        if (Number.isNaN(time)) return false;
+        const time = toTime(ride);
+        if (!Number.isFinite(time)) return false;
         return time > now;
       })
       .filter((ride) => {
@@ -79,30 +90,17 @@ function HopOnPage() {
         const pref = ride.genderPref || ride.preferred_gender || 'Any';
         return pref === genderFilter;
       })
-      .sort((a, b) => {
-        const toTime = (ride: Ride) => {
-          const dateString = ride.datetime
-            ? ride.datetime
-            : ride.travel_date && ride.travel_time
-            ? `${ride.travel_date}T${ride.travel_time}`
-            : null;
-
-          const time = dateString ? new Date(dateString).getTime() : Number.POSITIVE_INFINITY;
-          return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
-        };
-
-        return toTime(a) - toTime(b);
-      });
+      .sort((a, b) => toTime(a) - toTime(b));
   }, [rides, destinationFilter, genderFilter]);
 
   const postedRides = useMemo(
     () =>
       rides
         ? rides.filter((ride) =>
-            (ride.createdByEmail ?? ride.created_by ?? '') === (currentUserEmail ?? '')
+            (ride.createdByEmail ?? ride.created_by ?? '') === (currentUserEmail ?? currentUserId ?? '')
           )
         : [],
-    [rides, currentUserEmail]
+    [rides, currentUserEmail, currentUserId]
   );
 
   const joinedRides = useMemo(
@@ -115,7 +113,11 @@ function HopOnPage() {
 
   const handleCreateRide = async (payload: Omit<RideInput, 'createdByEmail'>) => {
     if (!currentUserEmail) return;
-    const ride = await createRide({ ...payload, createdByEmail: currentUserEmail });
+    const ride = await createRide({
+      ...payload,
+      createdByEmail: currentUserEmail,
+      created_by: currentUserId,
+    });
     setRides((prev) => [ride, ...(prev ?? [])]);
     setStatus('Ride posted!');
   };

@@ -55,6 +55,7 @@ export async function fetchRides(): Promise<Ride[]> {
 export async function createRide(input: RideInput): Promise<Ride> {
   const newRide = {
     createdByEmail: input.createdByEmail,
+    created_by: input.created_by,
     fromType: input.fromType,
     fromValue: input.fromValue,
     toType: input.toType,
