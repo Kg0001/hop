@@ -8,7 +8,8 @@ import { RideCard } from '@/components/RideCard';
 import { RideFilters, DestinationFilter, GenderFilter } from '@/components/RideFilters';
 import { MyRidesSection } from '@/components/MyRidesSection';
 import { PostRideButton } from '@/components/PostRideButton';
-import { createRide, deleteRide, fetchRides, joinRide } from '@/lib/ridesApi';
+import { createRide, deleteRide, joinRide } from '@/lib/ridesApi';
+import { supabase } from '@/lib/supabase';
 import { Ride, RideInput } from '@/types';
 
 function HopOnPage() {
@@ -23,8 +24,21 @@ function HopOnPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await fetchRides();
-        setRides(data ?? []);
+        const { data: authData } = await supabase.auth.getUser();
+
+        const { data, error } = await supabase
+          .from('rides')
+          .select('*')
+          .eq('created_by', authData?.user?.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Fetch error:', error);
+          setRides([]);
+          return;
+        }
+
+        setRides(data || []);
       } catch (error) {
         console.error('Error loading rides:', error);
         setRides([]);
@@ -32,6 +46,7 @@ function HopOnPage() {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
