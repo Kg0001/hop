@@ -12,6 +12,18 @@ export type Ride = {
   genderPref: 'Any' | 'Male' | 'Female';
   phone: string;
   passengerEmails: string[];
+  // Supabase columns (optional, keep compatibility with legacy shape)
+  created_by?: string | null;
+  created_at?: string;
+  from?: string;
+  to?: string;
+  travel_date?: string;
+  travel_time?: string;
+  preferred_gender?: string;
+  cab_price?: number;
+  seats?: number;
+  contact?: string;
+  hostel_block?: string | null;
 };
 
 export type RideInput = Omit<Ride, 'id' | 'seatsFilled' | 'passengerEmails'>;
