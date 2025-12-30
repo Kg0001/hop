@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-vitGrey text-slate-900 antialiased;
+}
+
+a {
+  @apply text-vitBlueLight hover:text-vitBlueDark;
+}
+
+button:disabled {
+  @apply opacity-60 cursor-not-allowed;
+}
+
+.container-narrow {
+  @apply mx-auto w-full max-w-screenMobile px-4 sm:px-6;
+}
+
+.card {
+  @apply rounded-lg border border-vitBorder bg-white shadow-card;
+}
+
+.pill {
+  @apply rounded-full border border-vitBorder bg-vitGrey px-3 py-1 text-sm font-medium text-slate-700;
+}

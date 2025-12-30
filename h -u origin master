@@ -1,0 +1,7 @@
+[33mb27bab1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m docs: add project documentation
+[33mc05d341[m feat: add core UI components
+[33m47360e0[m feat: add public assets
+[33mef75a40[m chore: add linting and tailwind configuration
+[33m9e169c1[m chore: configure Next.js and TypeScript
+[33m275831d[m chore: set up project dependencies
+[33m2a84080[m chore: configure git ignore rules
