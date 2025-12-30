@@ -24,12 +24,9 @@ function HopOnPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data: authData } = await supabase.auth.getUser();
-
         const { data, error } = await supabase
           .from('rides')
           .select('*')
-          .eq('created_by', authData?.user?.id)
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -56,25 +53,55 @@ function HopOnPage() {
     const now = Date.now();
 
     return rides
-      .filter((ride) => new Date(ride.datetime).getTime() > now)
+      .filter((ride) => {
+        const dateString = ride.datetime
+          ? ride.datetime
+          : ride.travel_date && ride.travel_time
+          ? `${ride.travel_date}T${ride.travel_time}`
+          : null;
+
+        if (!dateString) return false;
+        const time = new Date(dateString).getTime();
+        if (Number.isNaN(time)) return false;
+        return time > now;
+      })
       .filter((ride) => {
         if (destinationFilter === 'All') return true;
         if (destinationFilter === 'MH' || destinationFilter === 'LH') {
           return ride.toType === destinationFilter;
         }
 
-        const destination = ride.toValue || '';
+        const destination = ride.toValue || ride.to || '';
         return destination.includes(destinationFilter || '');
       })
       .filter((ride) => {
         if (genderFilter === 'All') return true;
-        return ride.genderPref === genderFilter;
+        const pref = ride.genderPref || ride.preferred_gender || 'Any';
+        return pref === genderFilter;
       })
-      .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime());
+      .sort((a, b) => {
+        const toTime = (ride: Ride) => {
+          const dateString = ride.datetime
+            ? ride.datetime
+            : ride.travel_date && ride.travel_time
+            ? `${ride.travel_date}T${ride.travel_time}`
+            : null;
+
+          const time = dateString ? new Date(dateString).getTime() : Number.POSITIVE_INFINITY;
+          return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+        };
+
+        return toTime(a) - toTime(b);
+      });
   }, [rides, destinationFilter, genderFilter]);
 
   const postedRides = useMemo(
-    () => (rides ? rides.filter((ride) => ride.createdByEmail === currentUserEmail) : []),
+    () =>
+      rides
+        ? rides.filter((ride) =>
+            (ride.createdByEmail ?? ride.created_by ?? '') === (currentUserEmail ?? '')
+          )
+        : [],
     [rides, currentUserEmail]
   );
 
@@ -95,14 +122,26 @@ function HopOnPage() {
 
   const handleJoinRide = async (id: string) => {
     if (!currentUserEmail) return;
-    const updated = await joinRide(id, currentUserEmail);
-    setRides((prev) => (prev ?? []).map((ride) => (ride.id === id ? updated : ride)));
+    try {
+      const updated = await joinRide(id, currentUserEmail);
+      setRides((prev) => (prev ?? []).map((ride) => (ride.id === id ? updated : ride)));
+      setStatus('Joined ride');
+    } catch (error) {
+      console.error('Join ride failed:', error);
+      setStatus(error instanceof Error ? error.message : 'Could not join ride');
+    }
   };
 
   const handleDeleteRide = async (id: string) => {
     if (!currentUserEmail) return;
-    await deleteRide(id, currentUserEmail);
-    setRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
+    try {
+      await deleteRide(id, currentUserEmail);
+      setRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
+      setStatus('Ride deleted');
+    } catch (error) {
+      console.error('Delete ride failed:', error);
+      setStatus(error instanceof Error ? error.message : 'Could not delete ride');
+    }
   };
 
   if (!isLoggedIn) {
