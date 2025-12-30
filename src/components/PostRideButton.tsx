@@ -36,8 +36,6 @@ export function PostRideButton({ onCreate, disabled = false }: PostRideButtonPro
         onSubmit={handleSubmit}
         disabled={disabled}
       />
-                </svg>
-      />
     </>
   );
 }
