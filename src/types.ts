@@ -14,6 +14,8 @@ export type Ride = {
   passengerEmails: string[];
   // Supabase columns (optional, keep compatibility with legacy shape)
   created_by?: string | null;
+  created_by_email?: string | null;
+  createdbyemail?: string | null;
   created_at?: string;
   from?: string;
   to?: string;

@@ -93,15 +93,23 @@ function HopOnPage() {
       .sort((a, b) => toTime(a) - toTime(b));
   }, [rides, destinationFilter, genderFilter]);
 
-  const postedRides = useMemo(
-    () =>
-      rides
-        ? rides.filter((ride) =>
-            (ride.createdByEmail ?? ride.created_by ?? '') === (currentUserEmail ?? currentUserId ?? '')
-          )
-        : [],
-    [rides, currentUserEmail, currentUserId]
-  );
+  const postedRides = useMemo(() => {
+    if (!rides) return [];
+
+    const userEmail = currentUserEmail ?? '';
+    const userId = currentUserId ?? '';
+
+    return rides.filter((ride) => {
+      const created =
+        ride.createdByEmail ??
+        // handle lowercase/underscored variants from Supabase
+        (ride as Record<string, unknown>).createdbyemail ??
+        (ride as Record<string, unknown>).created_by_email ??
+        ride.created_by ??
+        '';
+      return created === userEmail || created === userId;
+    });
+  }, [rides, currentUserEmail, currentUserId]);
 
   const joinedRides = useMemo(
     () =>
@@ -118,7 +126,16 @@ function HopOnPage() {
       createdByEmail: currentUserEmail,
       created_by: currentUserId,
     });
-    setRides((prev) => [ride, ...(prev ?? [])]);
+    const normalized: Ride = {
+      ...ride,
+      createdByEmail:
+        ride.createdByEmail ??
+        (ride as Record<string, unknown>).createdbyemail?.toString() ??
+        currentUserEmail,
+      created_by: ride.created_by ?? currentUserId ?? null,
+    };
+
+    setRides((prev) => [normalized, ...(prev ?? [])]);
     setStatus('Ride posted!');
   };
 
