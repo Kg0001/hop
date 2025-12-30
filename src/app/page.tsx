@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/Header';
 import { LoginBox } from '@/components/LoginBox';
-import { PostRideForm } from '@/components/PostRideForm';
 import { RideCard } from '@/components/RideCard';
 import { RideFilters, DestinationFilter, GenderFilter } from '@/components/RideFilters';
 import { MyRidesSection } from '@/components/MyRidesSection';
