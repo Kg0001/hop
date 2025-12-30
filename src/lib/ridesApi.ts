@@ -1,4 +1,5 @@
 import { Ride, RideInput } from '@/types';
+import { supabase } from '@/lib/supabaseClient';
 
 export const MH_BLOCKS = [
   'A',
@@ -30,84 +31,127 @@ export const LH_BLOCKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'RGT H', 
 
 export const CITY_LOCATIONS = ['Main Gate', 'Railway Station', 'City Center', 'Airport'];
 
-// In-memory mock; replace with Supabase queries while preserving signatures
-let rides: Ride[] = [
-  {
-    id: crypto.randomUUID(),
-    createdByEmail: 'hostel.mh@example.com',
-    fromType: 'MH',
-    fromValue: 'J',
-    toType: 'CITY',
-    toValue: 'Airport',
-    datetime: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
-    totalPrice: 900,
-    seatsTotal: 4,
-    seatsFilled: 1,
-    genderPref: 'Any',
-    phone: '+91 9876543210',
-    passengerEmails: ['hostel.mh@example.com'],
-  },
-  {
-    id: crypto.randomUUID(),
-    createdByEmail: 'lh.student@example.com',
-    fromType: 'LH',
-    fromValue: 'C',
-    toType: 'CITY',
-    toValue: 'Railway Station',
-    datetime: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-    totalPrice: 450,
-    seatsTotal: 3,
-    seatsFilled: 0,
-    genderPref: 'Female',
-    phone: '+91 9988776655',
-    passengerEmails: [],
-  },
-];
-
+/**
+ * Fetch all rides from Supabase, ordered by creation date (newest first)
+ */
 export async function fetchRides(): Promise<Ride[]> {
-  return Promise.resolve([...rides]);
+  const { data, error } = await supabase
+    .from('rides')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching rides:', error);
+    throw new Error('Failed to fetch rides');
+  }
+
+  return data || [];
 }
 
+/**
+ * Create a new ride in Supabase
+ */
 export async function createRide(input: RideInput): Promise<Ride> {
-  const ride: Ride = {
-    ...input,
-    id: crypto.randomUUID(),
+  const newRide = {
+    createdByEmail: input.createdByEmail,
+    fromType: input.fromType,
+    fromValue: input.fromValue,
+    toType: input.toType,
+    toValue: input.toValue,
+    datetime: input.datetime,
+    totalPrice: input.totalPrice,
+    seatsTotal: input.seatsTotal,
+    genderPref: input.genderPref,
+    phone: input.phone,
     seatsFilled: 0,
     passengerEmails: [],
   };
-  rides = [ride, ...rides];
-  return Promise.resolve(ride);
+
+  const { data, error } = await supabase
+    .from('rides')
+    .insert(newRide)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating ride:', error);
+    throw new Error('Failed to create ride');
+  }
+
+  return data;
 }
 
+/**
+ * Join a ride - add user email to passengerEmails and increment seatsFilled
+ */
 export async function joinRide(rideId: string, email: string): Promise<Ride> {
-  const idx = rides.findIndex((ride) => ride.id === rideId);
-  if (idx === -1) {
+  // First, fetch the current ride
+  const { data: ride, error: fetchError } = await supabase
+    .from('rides')
+    .select('*')
+    .eq('id', rideId)
+    .single();
+
+  if (fetchError || !ride) {
     throw new Error('Ride not found');
   }
-  const ride = rides[idx];
+
+  // Check if user already joined
   if (ride.passengerEmails.includes(email)) {
-    return Promise.resolve(ride);
+    return ride;
   }
+
+  // Check if ride is full
   if (ride.seatsFilled >= ride.seatsTotal) {
     throw new Error('Ride is full');
   }
-  const updated: Ride = {
-    ...ride,
-    seatsFilled: ride.seatsFilled + 1,
-    passengerEmails: [...ride.passengerEmails, email],
-  };
-  rides[idx] = updated;
-  return Promise.resolve(updated);
+
+  // Update the ride
+  const { data: updated, error: updateError } = await supabase
+    .from('rides')
+    .update({
+      seatsFilled: ride.seatsFilled + 1,
+      passengerEmails: [...ride.passengerEmails, email],
+    })
+    .eq('id', rideId)
+    .select()
+    .single();
+
+  if (updateError || !updated) {
+    console.error('Error joining ride:', updateError);
+    throw new Error('Failed to join ride');
+  }
+
+  return updated;
 }
 
+/**
+ * Delete a ride - only the creator can delete
+ */
 export async function deleteRide(rideId: string, email: string): Promise<void> {
-  const ride = rides.find((r) => r.id === rideId);
-  if (!ride) {
-    return Promise.resolve();
+  // First, verify the user is the creator
+  const { data: ride, error: fetchError } = await supabase
+    .from('rides')
+    .select('createdByEmail')
+    .eq('id', rideId)
+    .single();
+
+  if (fetchError || !ride) {
+    throw new Error('Ride not found');
   }
+
   if (ride.createdByEmail !== email) {
     throw new Error('Only the creator can delete this ride');
   }
-  rides = rides.filter((r) => r.id !== rideId);
-  return Promise.resolve();
+
+  // Delete the ride
+  const { error: deleteError } = await supabase
+    .from('rides')
+    .delete()
+    .eq('id', rideId);
+
+  if (deleteError) {
+    console.error('Error deleting ride:', deleteError);
+    throw new Error('Failed to delete ride');
+  }
 }
