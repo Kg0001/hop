@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { Header } from '@/components/Header';
 import { LoginBox } from '@/components/LoginBox';
@@ -15,7 +15,8 @@ import { Ride, RideInput } from '@/types';
 function HopOnPage() {
   const { isLoggedIn, currentUserEmail } = useAuth();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [rides, setRides] = useState<Ride[] | null>(null);
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [myRides, setMyRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [destinationFilter, setDestinationFilter] = useState<DestinationFilter>('All');
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('All');
@@ -54,6 +55,36 @@ function HopOnPage() {
     load();
   }, []);
 
+  const fetchMyRides = useCallback(async () => {
+    console.log('🔄 Fetching My Rides...');
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData?.user?.id;
+    setCurrentUserId(userId ?? null);
+    console.log('User ID:', userId);
+
+    const { data, error } = await supabase
+      .from('rides')
+      .select('*')
+      .eq('created_by', userId || '')
+      .order('created_at', { ascending: false });
+
+    console.log('My Rides data:', data);
+    if (error) console.error('Error:', error);
+    setMyRides(data || []);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'my') {
+      fetchMyRides();
+    }
+  }, [activeTab, fetchMyRides]);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchMyRides();
+    }
+  }, [isLoggedIn, fetchMyRides]);
+
   const toTime = (ride: Ride) => {
     const dateString = ride.datetime
       ? ride.datetime
@@ -66,7 +97,7 @@ function HopOnPage() {
   };
 
   const filteredRides = useMemo(() => {
-    if (!rides || rides.length === 0) return [];
+    if (rides.length === 0) return [];
 
     const now = Date.now();
 
@@ -93,29 +124,10 @@ function HopOnPage() {
       .sort((a, b) => toTime(a) - toTime(b));
   }, [rides, destinationFilter, genderFilter]);
 
-  const postedRides = useMemo(() => {
-    if (!rides) return [];
-
-    const userEmail = currentUserEmail ?? '';
-    const userId = currentUserId ?? '';
-
-    return rides.filter((ride) => {
-      const created =
-        ride.createdByEmail ??
-        // handle lowercase/underscored variants from Supabase
-        (ride as Record<string, unknown>).createdbyemail ??
-        (ride as Record<string, unknown>).created_by_email ??
-        ride.created_by ??
-        '';
-      return created === userEmail || created === userId;
-    });
-  }, [rides, currentUserEmail, currentUserId]);
+  const postedRides = useMemo(() => myRides, [myRides]);
 
   const joinedRides = useMemo(
-    () =>
-      rides
-        ? rides.filter((ride) => (ride.passengerEmails ?? []).includes(currentUserEmail ?? ''))
-        : [],
+    () => rides.filter((ride) => (ride.passengerEmails ?? []).includes(currentUserEmail ?? '')),
     [rides, currentUserEmail]
   );
 
@@ -136,6 +148,7 @@ function HopOnPage() {
     };
 
     setRides((prev) => [normalized, ...(prev ?? [])]);
+    setMyRides((prev) => [normalized, ...(prev ?? [])]);
     setStatus('Ride posted!');
   };
 
@@ -170,6 +183,7 @@ function HopOnPage() {
     try {
       await deleteRide(id, currentUserEmail);
       setRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
+      setMyRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
       setStatus('Ride deleted');
     } catch (error) {
       console.error('Delete ride failed:', error);
