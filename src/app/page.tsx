@@ -22,9 +22,14 @@ function HopOnPage() {
 
   useEffect(() => {
     const load = async () => {
-      const data = await fetchRides();
-      setRides(data);
-      setLoading(false);
+      try {
+        const data = await fetchRides();
+        setRides(data);
+      } catch (error) {
+        console.error('Error loading rides:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, []);
@@ -164,7 +169,7 @@ function HopOnPage() {
                 </div>
               ) : upcomingRides.length === 0 ? (
                 <div className="w-full flex-shrink-0">
-                  <div className="card p-6 text-center text-sm text-gray-600">No rides match your filters</div>
+                  <div className="card p-6 text-center text-sm text-gray-600">No rides posted yet</div>
                 </div>
               ) : (
                 upcomingRides.map((ride) => (

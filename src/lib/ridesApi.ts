@@ -1,5 +1,5 @@
 import { Ride, RideInput } from '@/types';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabase';
 
 export const MH_BLOCKS = [
   'A',
