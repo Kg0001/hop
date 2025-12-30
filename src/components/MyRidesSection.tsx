@@ -22,19 +22,19 @@ export function MyRidesSection({
   if (!isLoggedIn) return null;
 
   return (
-    <section className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-      <div className="mb-6">
+    <section className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
+      <div className="mb-6 space-y-1">
         <h2 className="text-lg font-semibold text-gray-900">My Rides</h2>
         <p className="text-sm text-gray-500">Manage your posted and joined rides</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-6">
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 border border-gray-200">
         <button
           onClick={() => setActiveTab('posted')}
-          className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${
+          className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg transition-all duration-200 text-center ${
             activeTab === 'posted'
-              ? 'bg-white text-gray-900 shadow-sm'
+              ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
@@ -42,9 +42,9 @@ export function MyRidesSection({
         </button>
         <button
           onClick={() => setActiveTab('joined')}
-          className={`flex-1 py-2.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 ${
+          className={`flex-1 py-3 px-4 text-sm font-semibold rounded-lg transition-all duration-200 text-center ${
             activeTab === 'joined'
-              ? 'bg-white text-gray-900 shadow-sm'
+              ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
@@ -56,7 +56,7 @@ export function MyRidesSection({
       {activeTab === 'posted' && (
         <div>
           {posted.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-12">
               <p className="text-sm text-gray-500">No rides posted yet</p>
             </div>
           ) : (
@@ -79,7 +79,7 @@ export function MyRidesSection({
       {activeTab === 'joined' && (
         <div>
           {joined.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-12">
               <p className="text-sm text-gray-500">No rides joined yet</p>
             </div>
           ) : (

@@ -33,9 +33,13 @@ function HopOnPage() {
     const now = Date.now();
     return rides
       .filter((ride) => new Date(ride.datetime).getTime() > now)
-      .filter((ride) =>
-        destinationFilter === 'All' ? true : ride.toValue === destinationFilter
-      )
+      .filter((ride) => {
+        if (destinationFilter === 'All') return true;
+        if (destinationFilter === 'MH' || destinationFilter === 'LH') {
+          return ride.toType === destinationFilter;
+        }
+        return ride.toValue === destinationFilter;
+      })
       .filter((ride) =>
         genderFilter === 'All' ? true : ride.genderPref === genderFilter
       )
@@ -159,8 +163,8 @@ function HopOnPage() {
                   <p className="text-gray-600 mt-4">Loading rides...</p>
                 </div>
               ) : upcomingRides.length === 0 ? (
-                <div className="w-80 flex-shrink-0 text-center py-12">
-                  <p className="text-gray-500">No rides match your filters.</p>
+                <div className="w-full flex-shrink-0">
+                  <div className="card p-6 text-center text-sm text-gray-600">No rides match your filters</div>
                 </div>
               ) : (
                 upcomingRides.map((ride) => (

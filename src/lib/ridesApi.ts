@@ -29,7 +29,8 @@ export const MH_BLOCKS = [
 
 export const LH_BLOCKS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'RGT H', 'GH ANNEX'];
 
-export const CITY_LOCATIONS = ['Main Gate', 'Railway Station', 'City Center', 'Airport'];
+// Shared city/transport locations used across filters and modal
+export const CITY_LOCATIONS = ['Katpadi Station', 'Bangalore Airport', 'Chennai Airport'];
 
 /**
  * Fetch all rides from Supabase, ordered by creation date (newest first)
