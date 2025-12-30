@@ -56,11 +56,13 @@ export function PostRideModal({ isOpen, onClose, onSubmit, disabled = false }: P
       travel_date: date,
       travel_time: time,
       preferred_gender: genderPref,
-      cab_price: parseInt(String(totalPrice), 10),
-      seats: parseInt(String(seatsTotal), 10),
+      cab_price: Number(totalPrice),
+      seats: Number(seatsTotal),
       contact: phone,
       hostel_block: fromType === 'MH' ? fromValue : null,
     };
+
+    console.log('PostRideModal submit payload:', payload);
     setPosting(true);
     try {
       const { data, error } = await supabase
@@ -68,7 +70,12 @@ export function PostRideModal({ isOpen, onClose, onSubmit, disabled = false }: P
         .insert([payload]);
 
       if (error) {
-        console.error('Supabase insert error:', error.message, error);
+        console.error('Supabase insert error:', {
+          message: error.message,
+          details: (error as { details?: string }).details,
+          hint: (error as { hint?: string }).hint,
+          code: error.code,
+        });
         setMessage(error.message || 'Could not post ride. Try again.');
         return;
       }
