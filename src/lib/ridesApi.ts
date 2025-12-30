@@ -76,7 +76,7 @@ export async function createRide(input: RideInput): Promise<Ride> {
 
   if (error) {
     console.error('Error creating ride:', error);
-    throw new Error('Failed to create ride');
+    throw new Error(error.message || 'Failed to create ride');
   }
 
   return data;

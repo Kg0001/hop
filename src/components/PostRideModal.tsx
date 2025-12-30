@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { RideInput } from '@/types';
 import { CITY_LOCATIONS, LH_BLOCKS, MH_BLOCKS } from '@/lib/ridesApi';
 
@@ -48,40 +49,46 @@ export function PostRideModal({ isOpen, onClose, onSubmit, disabled = false }: P
       setMessage('Please fill all fields with valid values.');
       return;
     }
-    const datetimeIso = new Date(`${date}T${time}`).toISOString();
-    const payload: Omit<RideInput, 'createdByEmail'> = {
-      fromType,
-      fromValue,
-      toType,
-      toValue,
-      datetime: datetimeIso,
-      totalPrice,
-      seatsTotal,
-      genderPref,
-      phone,
+    // Supabase payload for rides table
+    const payload = {
+      from: fromValue,
+      to: toValue,
+      travel_date: date,
+      travel_time: time,
+      preferred_gender: genderPref,
+      cab_price: parseInt(String(totalPrice), 10),
+      seats: parseInt(String(seatsTotal), 10),
+      contact: phone,
+      hostel_block: fromType === 'MH' ? fromValue : null,
     };
     setPosting(true);
     try {
-      await onSubmit(payload);
+      const { data, error } = await supabase
+        .from('rides')
+        .insert([payload]);
+
+      if (error) {
+        console.error('Supabase insert error:', error.message, error);
+        setMessage(error.message || 'Could not post ride. Try again.');
+        return;
+      }
+
       setMessage('Ride posted successfully!');
+      onClose();
       // Reset form
       setFromType('MH');
       setToType('CITY');
       setFromValue('');
-      setToValue('Airport');
+      setToValue(CITY_LOCATIONS[0] ?? '');
       setDate('');
       setTime('');
       setTotalPrice(0);
       setSeatsTotal(3);
       setGenderPref('Any');
       setPhone('');
-      // Close modal after short delay
-      setTimeout(() => {
-        onClose();
-        setMessage(null);
-      }, 1500);
     } catch (err: unknown) {
-      setMessage('Could not post ride. Try again.');
+      console.error('Post ride failed:', err);
+      setMessage(err instanceof Error ? err.message : 'Could not post ride. Try again.');
     } finally {
       setPosting(false);
     }
