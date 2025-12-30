@@ -13,7 +13,7 @@ import { Ride, RideInput } from '@/types';
 
 function HopOnPage() {
   const { isLoggedIn, currentUserEmail } = useAuth();
-  const [rides, setRides] = useState<Ride[]>([]);
+  const [rides, setRides] = useState<Ride[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [destinationFilter, setDestinationFilter] = useState<DestinationFilter>('All');
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('All');
@@ -24,9 +24,10 @@ function HopOnPage() {
     const load = async () => {
       try {
         const data = await fetchRides();
-        setRides(data);
+        setRides(data ?? []);
       } catch (error) {
         console.error('Error loading rides:', error);
+        setRides([]);
       } finally {
         setLoading(false);
       }
@@ -35,6 +36,7 @@ function HopOnPage() {
   }, []);
 
   const upcomingRides = useMemo(() => {
+    if (!rides || rides.length === 0) return [];
     const now = Date.now();
     return rides
       .filter((ride) => new Date(ride.datetime).getTime() > now)
@@ -52,12 +54,12 @@ function HopOnPage() {
   }, [rides, destinationFilter, genderFilter]);
 
   const postedRides = useMemo(
-    () => rides.filter((ride) => ride.createdByEmail === currentUserEmail),
+    () => (rides ? rides.filter((ride) => ride.createdByEmail === currentUserEmail) : []),
     [rides, currentUserEmail]
   );
 
   const joinedRides = useMemo(
-    () => rides.filter((ride) => ride.passengerEmails.includes(currentUserEmail ?? '')),
+    () => (rides ? rides.filter((ride) => ride.passengerEmails.includes(currentUserEmail ?? '')) : []),
     [rides, currentUserEmail]
   );
 
@@ -162,7 +164,7 @@ function HopOnPage() {
           /* Browse Rides Content */
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-4 min-w-max">
-              {loading ? (
+              {loading || !rides ? (
                 <div className="w-80 flex-shrink-0 text-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="text-gray-600 mt-4">Loading rides...</p>
