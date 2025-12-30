@@ -51,11 +51,20 @@ export function PostRideModal({ isOpen, onClose, onSubmit, disabled = false }: P
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (disabled) return;
-    if (!date || !time || !fromValue || !toValue || !phone || totalPrice <= 0 || seatsTotal < 1) {
-      setMessage('Please fill all fields with valid values.');
+
+    const errors: string[] = [];
+    if (!date || !time) errors.push('Pick a date and time');
+    if (!fromValue || !toValue) errors.push('Select start and destination');
+    if (fromValue === toValue) errors.push('From and destination cannot match');
+    if (!phone || phone.trim().length < 8) errors.push('Add a valid phone');
+    if (totalPrice <= 0) errors.push('Price must be greater than 0');
+    if (seatsTotal < 1 || seatsTotal > 6) errors.push('Seats must be between 1 and 6');
+
+    if (errors.length > 0) {
+      setMessage(errors.join(' · '));
       return;
     }
-    // Supabase payload for rides table
+    // Supabase payload for rides table (legacy-safe)
     const payload = {
       from: fromValue,
       to: toValue,

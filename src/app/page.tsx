@@ -122,6 +122,20 @@ function HopOnPage() {
 
   const handleJoinRide = async (id: string) => {
     if (!currentUserEmail) return;
+    const target = rides?.find((ride) => ride.id === id);
+    if (!target) {
+      setStatus('Ride not found');
+      return;
+    }
+    if ((target.passengerEmails ?? []).includes(currentUserEmail)) {
+      setStatus('You already joined this ride');
+      return;
+    }
+    if (target.seatsFilled >= target.seatsTotal) {
+      setStatus('Ride is full');
+      return;
+    }
+
     try {
       const updated = await joinRide(id, currentUserEmail);
       setRides((prev) => (prev ?? []).map((ride) => (ride.id === id ? updated : ride)));
