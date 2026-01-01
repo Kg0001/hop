@@ -73,7 +73,6 @@ export function PostRideModal({ isOpen, onClose, onSubmit, disabled = false }: P
       seatsTotal: Number(seatsTotal),
       genderPref,
       phone,
-      created_by: null,
     };
 
     setPosting(true);

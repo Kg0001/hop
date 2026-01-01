@@ -60,18 +60,18 @@ function HopOnPage() {
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData?.user?.id;
     setCurrentUserId(userId ?? null);
-    console.log('User ID:', userId);
+    console.log('User ID:', userId, 'Email:', currentUserEmail);
 
     const { data, error } = await supabase
       .from('rides')
       .select('*')
-      .eq('created_by', userId || '')
+      .or(`created_by.eq.${userId || ''},createdByEmail.eq.${currentUserEmail || ''}`)
       .order('created_at', { ascending: false });
 
     console.log('My Rides data:', data);
     if (error) console.error('Error:', error);
     setMyRides(data || []);
-  }, []);
+  }, [currentUserEmail]);
 
   useEffect(() => {
     if (activeTab === 'my') {
