@@ -4,9 +4,15 @@ import { FormEvent, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 function isVitEmail(email: string) {
-  const lower = email.toLowerCase().trim();
-  const allowedDomains = ['vit.ac.in', 'vitstudent.ac.in'];
-  return allowedDomains.some((domain) => lower.endsWith('@' + domain));
+  // Pattern: firstname.lastnameYYYY@vitstudent.ac.in
+  // - firstname: one or more letters
+  // - period (.)
+  // - lastname: one or more letters
+  // - batchYear: exactly 4 digits
+  // - domain: vitstudent.ac.in
+  const vitStudentEmailPattern = /^[a-zA-Z]+\.[a-zA-Z]+\d{4}@vitstudent\.ac\.in$/;
+  
+  return vitStudentEmailPattern.test(email.trim().toLowerCase());
 }
 
 export function LoginBox() {
@@ -21,7 +27,7 @@ export function LoginBox() {
       return;
     }
     if (!isVitEmail(email)) {
-      setError('Only VIT email addresses (@vit.ac.in or @vitstudent.ac.in) are allowed.');
+      setError('Please use your VIT student email (format: firstname.lastnameYYYY@vitstudent.ac.in)');
       return;
     }
     setError('');
