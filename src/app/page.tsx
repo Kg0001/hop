@@ -8,7 +8,7 @@ import { RideCard } from '@/components/RideCard';
 import { RideFilters, DestinationFilter, GenderFilter } from '@/components/RideFilters';
 import { MyRidesSection } from '@/components/MyRidesSection';
 import { PostRideButton } from '@/components/PostRideButton';
-import { createRide, deleteRide, joinRide } from '@/lib/ridesApi';
+import { createRide, deleteRide, joinRide, fetchRides } from '@/lib/ridesApi';
 import { supabase } from '@/lib/supabase';
 import { Ride, RideInput } from '@/types';
 
@@ -55,17 +55,27 @@ function HopOnPage() {
       return;
     }
 
-    console.log('🔄 Fetching My Rides for:', currentUserEmail);
+    console.log('🔄 Fetching My Rides for:', { currentUserEmail, currentUserId });
 
-    const { data, error } = await supabase
-      .from('rides')
-      .select('*')
-      .eq('createdByEmail', currentUserEmail)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('createdByEmail', currentUserEmail)
+        .order('created_at', { ascending: false });
 
-    console.log('My Rides data:', data);
-    if (error) console.error('Error:', error);
-    setMyRides(data || []);
+      if (error) {
+        console.error('❌ Error fetching my rides:', error);
+        setMyRides([]);
+        return;
+      }
+
+      console.log('✅ My Rides data:', data?.length ?? 0);
+      setMyRides(data || []);
+    } catch (err) {
+      console.error('❌ Exception in fetchMyRides:', err);
+      setMyRides([]);
+    }
   }, [currentUserEmail]);
 
   useEffect(() => {
@@ -175,14 +185,40 @@ function HopOnPage() {
 
   const handleDeleteRide = async (id: string) => {
     if (!currentUserEmail) return;
+    
     try {
-      await deleteRide(id, currentUserEmail);
-      setRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
-      setMyRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
+      console.log('🗑️ Delete initiated for ride:', id);
+      
+      // Call delete with userId + email for dual auth check
+      await deleteRide(id, currentUserId, currentUserEmail);
+      
+      // Immediately remove from local state
+      setRides((prev) => {
+        const filtered = (prev ?? []).filter((ride) => ride.id !== id);
+        console.log('✅ Removed from rides state:', id, 'Remaining:', filtered.length);
+        return filtered;
+      });
+      
+      setMyRides((prev) => {
+        const filtered = (prev ?? []).filter((ride) => ride.id !== id);
+        console.log('✅ Removed from myRides state:', id, 'Remaining:', filtered.length);
+        return filtered;
+      });
+      
       setStatus('Ride deleted');
     } catch (error) {
-      console.error('Delete ride failed:', error);
+      console.error('❌ Delete ride failed:', error);
       setStatus(error instanceof Error ? error.message : 'Could not delete ride');
+      
+      // Refetch to sync if delete failed
+      try {
+        console.log('🔄 Refetching rides after delete failure...');
+        const updated = await fetchRides();
+        setRides(updated);
+        console.log('✅ Refetched rides:', updated.length);
+      } catch (refetchErr) {
+        console.error('❌ Refetch failed:', refetchErr);
+      }
     }
   };
 
