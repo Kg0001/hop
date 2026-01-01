@@ -8,7 +8,7 @@ import { RideCard } from '@/components/RideCard';
 import { RideFilters, DestinationFilter, GenderFilter } from '@/components/RideFilters';
 import { MyRidesSection } from '@/components/MyRidesSection';
 import { PostRideButton } from '@/components/PostRideButton';
-import { createRide, deleteRide, joinRide, fetchRides } from '@/lib/ridesApi';
+import { createRide, deleteRide, joinRide, unjoinRide, fetchRides } from '@/lib/ridesApi';
 import { supabase } from '@/lib/supabase';
 import { Ride, RideInput } from '@/types';
 
@@ -164,22 +164,27 @@ function HopOnPage() {
       setStatus('Ride not found');
       return;
     }
-    if ((target.passengerEmails ?? []).includes(currentUserEmail)) {
-      setStatus('You already joined this ride');
-      return;
-    }
-    if (target.seatsFilled >= target.seatsTotal) {
-      setStatus('Ride is full');
-      return;
-    }
 
+    const isAlreadyJoined = (target.passengerEmails ?? []).includes(currentUserEmail);
+
+    // Toggle: if joined, unjoin; if not joined, join
     try {
-      const updated = await joinRide(id, currentUserEmail);
-      setRides((prev) => (prev ?? []).map((ride) => (ride.id === id ? updated : ride)));
-      setStatus('Joined ride');
+      if (isAlreadyJoined) {
+        const updated = await unjoinRide(id, currentUserEmail);
+        setRides((prev) => (prev ?? []).map((ride) => (ride.id === id ? updated : ride)));
+        setStatus('Left ride');
+      } else {
+        if (target.seatsFilled >= target.seatsTotal) {
+          setStatus('Ride is full');
+          return;
+        }
+        const updated = await joinRide(id, currentUserEmail);
+        setRides((prev) => (prev ?? []).map((ride) => (ride.id === id ? updated : ride)));
+        setStatus('Joined ride');
+      }
     } catch (error) {
-      console.error('Join ride failed:', error);
-      setStatus(error instanceof Error ? error.message : 'Could not join ride');
+      console.error('Join/leave ride failed:', error);
+      setStatus(error instanceof Error ? error.message : 'Could not update ride');
     }
   };
 

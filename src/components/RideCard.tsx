@@ -70,14 +70,13 @@ export function RideCard({
       <button
         type="button"
         onClick={() => onJoin?.(ride.id)}
-        disabled={isPassenger}
         className={`w-full rounded-lg px-4 py-3 text-sm font-semibold shadow-sm transition ${
           isPassenger
-            ? 'bg-gray-300 text-gray-600'
+            ? 'bg-red-500 text-white hover:bg-red-600'
             : 'bg-blue-600 text-white hover:bg-blue-700'
         }`}
       >
-        {isPassenger ? 'Joined' : 'Join Ride'}
+        {isPassenger ? 'Leave Ride' : 'Join Ride'}
       </button>
     );
   };

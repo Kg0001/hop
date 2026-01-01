@@ -175,6 +175,45 @@ export async function joinRide(rideId: string, email: string): Promise<Ride> {
 }
 
 /**
+ * Leave a ride - remove user email from passengerEmails and decrement seatsFilled
+ */
+export async function unjoinRide(rideId: string, email: string): Promise<Ride> {
+  // First, fetch the current ride
+  const { data: ride, error: fetchError } = await supabase
+    .from('rides')
+    .select('*')
+    .eq('id', rideId)
+    .single();
+
+  if (fetchError || !ride) {
+    throw new Error('Ride not found');
+  }
+
+  // Check if user is in the ride
+  if (!(ride.passengerEmails ?? []).includes(email)) {
+    return ride; // User wasn't in the ride anyway
+  }
+
+  // Update the ride
+  const { data: updated, error: updateError } = await supabase
+    .from('rides')
+    .update({
+      seatsFilled: Math.max(0, ride.seatsFilled - 1),
+      passengerEmails: (ride.passengerEmails ?? []).filter(e => e !== email),
+    })
+    .eq('id', rideId)
+    .select()
+    .single();
+
+  if (updateError || !updated) {
+    console.error('Error leaving ride:', updateError);
+    throw new Error('Failed to leave ride');
+  }
+
+  return updated;
+}
+
+/**
  * Delete a ride - only the creator can delete
  * Uses created_by (userId) as primary check, falls back to createdByEmail
  */
