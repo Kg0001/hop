@@ -13,8 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { Ride, RideInput } from '@/types';
 
 function HopOnPage() {
-  const { isLoggedIn, currentUserEmail } = useAuth();
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { isLoggedIn, currentUserEmail, currentUserId } = useAuth();
   const [rides, setRides] = useState<Ride[]>([]);
   const [myRides, setMyRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,12 +25,6 @@ function HopOnPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data: authData, error: authError } = await supabase.auth.getUser();
-        if (authError) {
-          console.error('Auth error:', authError);
-        }
-        setCurrentUserId(authData?.user?.id ?? null);
-
         const { data, error } = await supabase
           .from('rides')
           .select('*')
@@ -56,22 +49,24 @@ function HopOnPage() {
   }, []);
 
   const fetchMyRides = useCallback(async () => {
-    console.log('🔄 Fetching My Rides...');
-    const { data: authData } = await supabase.auth.getUser();
-    const userId = authData?.user?.id;
-    setCurrentUserId(userId ?? null);
-    console.log('User ID:', userId, 'Email:', currentUserEmail);
+    if (!currentUserId) {
+      console.log('🔄 No user ID, skipping My Rides fetch');
+      setMyRides([]);
+      return;
+    }
+
+    console.log('🔄 Fetching My Rides for user:', currentUserId);
 
     const { data, error } = await supabase
       .from('rides')
       .select('*')
-      .or(`created_by.eq.${userId || ''},createdByEmail.eq.${currentUserEmail || ''}`)
+      .eq('created_by', currentUserId)
       .order('created_at', { ascending: false });
 
     console.log('My Rides data:', data);
     if (error) console.error('Error:', error);
     setMyRides(data || []);
-  }, [currentUserEmail]);
+  }, [currentUserId]);
 
   useEffect(() => {
     if (activeTab === 'my') {
@@ -179,9 +174,9 @@ function HopOnPage() {
   };
 
   const handleDeleteRide = async (id: string) => {
-    if (!currentUserEmail) return;
+    if (!currentUserId) return;
     try {
-      await deleteRide(id, currentUserEmail);
+      await deleteRide(id, currentUserId);
       setRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
       setMyRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
       setStatus('Ride deleted');
@@ -295,6 +290,7 @@ function HopOnPage() {
                     onDelete={handleDeleteRide}
                     isLoggedIn={isLoggedIn}
                     currentUserEmail={currentUserEmail}
+                    currentUserId={currentUserId}
                   />
                 ))
               )}
@@ -309,6 +305,7 @@ function HopOnPage() {
             onDelete={handleDeleteRide}
             isLoggedIn={isLoggedIn}
             currentUserEmail={currentUserEmail}
+            currentUserId={currentUserId}
           />
         )}
       </main>

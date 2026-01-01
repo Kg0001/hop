@@ -9,6 +9,7 @@ export function MyRidesSection({
   onDelete,
   isLoggedIn,
   currentUserEmail,
+  currentUserId,
 }: {
   posted: Ride[];
   joined: Ride[];
@@ -16,6 +17,7 @@ export function MyRidesSection({
   onDelete: (id: string) => void;
   isLoggedIn: boolean;
   currentUserEmail: string | null;
+  currentUserId: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<'posted' | 'joined'>('posted');
 
@@ -69,6 +71,7 @@ export function MyRidesSection({
                   onDelete={onDelete}
                   isLoggedIn={isLoggedIn}
                   currentUserEmail={currentUserEmail}
+                  currentUserId={currentUserId}
                 />
               ))}
             </div>
@@ -92,6 +95,7 @@ export function MyRidesSection({
                   onDelete={onDelete}
                   isLoggedIn={isLoggedIn}
                   currentUserEmail={currentUserEmail}
+                  currentUserId={currentUserId}
                 />
               ))}
             </div>

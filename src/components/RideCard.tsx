@@ -19,15 +19,17 @@ export function RideCard({
   onDelete,
   isLoggedIn,
   currentUserEmail,
+  currentUserId,
 }: {
   ride: Ride;
   onJoin?: (id: string) => void;
   onDelete?: (id: string) => void;
   isLoggedIn: boolean;
   currentUserEmail: string | null;
+  currentUserId: string | null;
 }) {
   const [copied, setCopied] = useState(false);
-  const isCreator = currentUserEmail === ride.createdByEmail;
+  const isCreator = currentUserId && ride.created_by ? currentUserId === ride.created_by : currentUserEmail === ride.createdByEmail;
   const isPassenger = (ride.passengerEmails ?? []).includes(currentUserEmail ?? '');
   const isFull = ride.seatsFilled >= ride.seatsTotal;
 

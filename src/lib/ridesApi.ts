@@ -130,11 +130,11 @@ export async function joinRide(rideId: string, email: string): Promise<Ride> {
 /**
  * Delete a ride - only the creator can delete
  */
-export async function deleteRide(rideId: string, email: string): Promise<void> {
+export async function deleteRide(rideId: string, userId: string): Promise<void> {
   // First, verify the user is the creator
   const { data: ride, error: fetchError } = await supabase
     .from('rides')
-    .select('createdByEmail')
+    .select('created_by')
     .eq('id', rideId)
     .single();
 
@@ -142,7 +142,7 @@ export async function deleteRide(rideId: string, email: string): Promise<void> {
     throw new Error('Ride not found');
   }
 
-  if (ride.createdByEmail !== email) {
+  if (ride.created_by !== userId) {
     throw new Error('Only the creator can delete this ride');
   }
 
