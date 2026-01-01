@@ -49,24 +49,24 @@ function HopOnPage() {
   }, []);
 
   const fetchMyRides = useCallback(async () => {
-    if (!currentUserId) {
-      console.log('🔄 No user ID, skipping My Rides fetch');
+    if (!currentUserEmail) {
+      console.log('🔄 No user email, skipping My Rides fetch');
       setMyRides([]);
       return;
     }
 
-    console.log('🔄 Fetching My Rides for user:', currentUserId);
+    console.log('🔄 Fetching My Rides for:', currentUserEmail);
 
     const { data, error } = await supabase
       .from('rides')
       .select('*')
-      .eq('created_by', currentUserId)
+      .eq('createdByEmail', currentUserEmail)
       .order('created_at', { ascending: false });
 
     console.log('My Rides data:', data);
     if (error) console.error('Error:', error);
     setMyRides(data || []);
-  }, [currentUserId]);
+  }, [currentUserEmail]);
 
   useEffect(() => {
     if (activeTab === 'my') {
@@ -174,9 +174,9 @@ function HopOnPage() {
   };
 
   const handleDeleteRide = async (id: string) => {
-    if (!currentUserId) return;
+    if (!currentUserEmail) return;
     try {
-      await deleteRide(id, currentUserId);
+      await deleteRide(id, currentUserEmail);
       setRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
       setMyRides((prev) => (prev ?? []).filter((ride) => ride.id !== id));
       setStatus('Ride deleted');

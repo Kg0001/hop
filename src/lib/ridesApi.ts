@@ -50,6 +50,24 @@ export async function fetchRides(): Promise<Ride[]> {
 }
 
 /**
+ * Fetch rides where user is a passenger (by email in passengerEmails array)
+ */
+export async function fetchJoinedRides(email: string): Promise<Ride[]> {
+  const { data, error } = await supabase
+    .from('rides')
+    .select('*')
+    .ilike('passengerEmails', `%${email}%`)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching joined rides:', error);
+    throw new Error('Failed to fetch joined rides');
+  }
+
+  return data || [];
+}
+
+/**
  * Create a new ride in Supabase
  */
 export async function createRide(input: RideInput): Promise<Ride> {
@@ -130,11 +148,11 @@ export async function joinRide(rideId: string, email: string): Promise<Ride> {
 /**
  * Delete a ride - only the creator can delete
  */
-export async function deleteRide(rideId: string, userId: string): Promise<void> {
+export async function deleteRide(rideId: string, email: string): Promise<void> {
   // First, verify the user is the creator
   const { data: ride, error: fetchError } = await supabase
     .from('rides')
-    .select('created_by')
+    .select('createdByEmail')
     .eq('id', rideId)
     .single();
 
@@ -142,7 +160,7 @@ export async function deleteRide(rideId: string, userId: string): Promise<void> 
     throw new Error('Ride not found');
   }
 
-  if (ride.created_by !== userId) {
+  if (ride.createdByEmail !== email) {
     throw new Error('Only the creator can delete this ride');
   }
 
