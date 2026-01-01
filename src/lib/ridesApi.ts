@@ -199,7 +199,7 @@ export async function unjoinRide(rideId: string, email: string): Promise<Ride> {
     .from('rides')
     .update({
       seatsFilled: Math.max(0, ride.seatsFilled - 1),
-      passengerEmails: (ride.passengerEmails ?? []).filter(e => e !== email),
+      passengerEmails: (ride.passengerEmails ?? []).filter((e: string) => e !== email),
     })
     .eq('id', rideId)
     .select()
